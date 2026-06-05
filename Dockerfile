@@ -36,7 +36,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat unzip
 
 # Usuário não-root por segurança
 RUN addgroup --system --gid 1001 nodejs
@@ -47,8 +47,12 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Cria pasta para a Oracle Wallet (será montada como volume no Coolify)
-RUN mkdir -p /app/wallet && chown -R nextjs:nodejs /app/wallet
+# Entrypoint que decodifica a wallet
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
+
+# Pasta para a Oracle Wallet
+RUN mkdir -p /app/wallet && chown -R nextjs:nodejs /app/wallet /app/docker-entrypoint.sh
 
 USER nextjs
 
@@ -57,4 +61,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-CMD ["node", "server.js"]
+ENTRYPOINT ["./docker-entrypoint.sh"]
