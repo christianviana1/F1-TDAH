@@ -28,8 +28,8 @@ export const authOptions: NextAuthOptions = {
 
         const rows = await query<any>(
           `SELECT id, name, email, xp, level_num, password_hash
-           FROM users WHERE email = :email`,
-          { email: credentials.email }
+           FROM users WHERE email = :b_email`,
+          { b_email: credentials.email }
         );
 
         if (!rows.length || !rows[0].PASSWORD_HASH) return null;
@@ -60,8 +60,8 @@ export const authOptions: NextAuthOptions = {
         // O try/catch garante que um timeout ou erro Oracle não quebre a sessão.
         try {
           const rows = await query<any>(
-            `SELECT xp, level_num FROM users WHERE id = :id`,
-            { id: token.id }
+            `SELECT xp, level_num FROM users WHERE id = :b_uid`,
+            { b_uid: token.id }
           );
           if (rows.length) {
             token.xp = rows[0].XP;
