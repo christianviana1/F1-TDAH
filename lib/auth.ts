@@ -12,6 +12,15 @@ function hashPassword(password: string) {
 export const authOptions: NextAuthOptions = {
   adapter: OracleAdapter(),
   session: { strategy: "jwt" },
+  debug: process.env.NODE_ENV !== "production", // loga erros detalhados em dev
+  logger: {
+    error(code, metadata) {
+      console.error("[NextAuth Error]", code, JSON.stringify(metadata));
+    },
+    warn(code) {
+      console.warn("[NextAuth Warn]", code);
+    },
+  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
