@@ -1,0 +1,11 @@
+.git
+.gitignore
+.next
+node_modules
+.env
+.env.local
+.env*.local
+README.md
+.kiro
+.vscode
+coverage
