@@ -44,6 +44,31 @@ async function findOrCreateGoogleUser(profile: {
 export const authOptions: NextAuthOptions = {
   // SEM adapter — JWT puro, usuários gerenciados via callbacks
   session: { strategy: "jwt" },
+  // Necessário quando rodando atrás de proxy/load balancer (Coolify)
+  // Permite que o NextAuth aceite requisições de qualquer host
+  useSecureCookies: false,
+  cookies: {
+    sessionToken: {
+      name: "next-auth.session-token",
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: false },
+    },
+    callbackUrl: {
+      name: "next-auth.callback-url",
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: false },
+    },
+    csrfToken: {
+      name: "next-auth.csrf-token",
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: false },
+    },
+    pkceCodeVerifier: {
+      name: "next-auth.pkce.code_verifier",
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: false, maxAge: 900 },
+    },
+    state: {
+      name: "next-auth.state",
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: false, maxAge: 900 },
+    },
+  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
