@@ -12,13 +12,16 @@ function hashPassword(password: string) {
 export const authOptions: NextAuthOptions = {
   adapter: OracleAdapter(),
   session: { strategy: "jwt" },
-  debug: process.env.NODE_ENV !== "production", // loga erros detalhados em dev
+  debug: true, // força log de todos os erros em produção
   logger: {
     error(code, metadata) {
-      console.error("[NextAuth Error]", code, JSON.stringify(metadata));
+      console.error("[NextAuth Error]", JSON.stringify({ code, metadata }));
     },
     warn(code) {
       console.warn("[NextAuth Warn]", code);
+    },
+    debug(code, metadata) {
+      console.log("[NextAuth Debug]", JSON.stringify({ code, metadata }));
     },
   },
   providers: [
