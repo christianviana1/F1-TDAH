@@ -24,9 +24,12 @@ export async function getPool(): Promise<oracledb.Pool> {
   if (!pool) {
     pool = await oracledb.createPool({
       ...CONNECTION_CONFIG,
-      poolMin: 1,
-      poolMax: 5,
+      poolMin: 2,
+      poolMax: 10,
       poolIncrement: 1,
+      poolTimeout: 60,
+      connectTimeout: 30,
+      queueTimeout: 60000,
     });
   }
   return pool;
@@ -42,6 +45,7 @@ export async function query<T = Record<string, unknown>>(
   try {
     const result = await conn.execute<T>(sql, binds, {
       outFormat: oracledb.OUT_FORMAT_OBJECT,
+      fetchTypeHandler: undefined,
       ...options,
     });
     return (result.rows ?? []) as T[];

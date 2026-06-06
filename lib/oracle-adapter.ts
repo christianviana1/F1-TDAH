@@ -37,17 +37,26 @@ export function OracleAdapter(): Adapter {
           b_img: user.image ?? null,
         }
       );
-      const rows = await query<any>(`SELECT * FROM users WHERE id = :b_id`, { b_id });
+      const rows = await query<any>(
+        `SELECT id, name, email, email_verified, image, xp, level_num, password_hash FROM users WHERE id = :b_id`,
+        { b_id }
+      );
       return mapUser(rows[0]);
     },
 
     async getUser(id) {
-      const rows = await query<any>(`SELECT * FROM users WHERE id = :b_id`, { b_id: id });
+      const rows = await query<any>(
+        `SELECT id, name, email, email_verified, image, xp, level_num, password_hash FROM users WHERE id = :b_id`,
+        { b_id: id }
+      );
       return rows.length ? mapUser(rows[0]) : null;
     },
 
     async getUserByEmail(email) {
-      const rows = await query<any>(`SELECT * FROM users WHERE email = :b_email`, { b_email: email });
+      const rows = await query<any>(
+        `SELECT id, name, email, email_verified, image, xp, level_num, password_hash FROM users WHERE email = :b_email`,
+        { b_email: email }
+      );
       return rows.length ? mapUser(rows[0]) : null;
     },
 
@@ -77,7 +86,10 @@ export function OracleAdapter(): Adapter {
           b_img: user.image ?? null,
         }
       );
-      const rows = await query<any>(`SELECT * FROM users WHERE id = :b_id`, { b_id: user.id });
+      const rows = await query<any>(
+        `SELECT id, name, email, email_verified, image, xp, level_num, password_hash FROM users WHERE id = :b_id`,
+        { b_id: user.id }
+      );
       return mapUser(rows[0]);
     },
 
