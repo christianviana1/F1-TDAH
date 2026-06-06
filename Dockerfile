@@ -21,7 +21,6 @@ COPY . .
 
 # Variáveis dummy para o build não falhar (valores reais vêm no runtime via env)
 ENV NEXTAUTH_SECRET=build_placeholder
-ENV NEXTAUTH_URL=http://localhost:3000
 ENV ORACLE_USER=build_placeholder
 ENV ORACLE_PASSWORD=build_placeholder
 ENV ORACLE_CONNECT_STRING=build_placeholder

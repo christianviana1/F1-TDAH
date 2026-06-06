@@ -136,8 +136,9 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
+        console.log("[jwt] Novo login, user.id:", user.id);
         token.id = user.id;
         token.xp = (user as any).xp ?? 0;
         token.level = (user as any).level ?? 1;
@@ -151,18 +152,22 @@ export const authOptions: NextAuthOptions = {
             token.xp = rows[0].XP;
             token.level = rows[0].LEVEL_NUM;
           }
-        } catch {
+        } catch (err: any) {
+          console.error("[jwt] Erro ao refresh do token:", err?.message);
           // Mantém valores anteriores
         }
       }
+      console.log("[jwt] token.id:", token.id, "xp:", token.xp);
       return token;
     },
     async session({ session, token }) {
+      console.log("[session] token.id:", token.id);
       if (session.user && token) {
         session.user.id = token.id as string;
         session.user.xp = token.xp as number;
         session.user.level = token.level as number;
       }
+      console.log("[session] session.user.id:", session.user?.id);
       return session;
     },
   },
