@@ -25,6 +25,7 @@ export function OracleAdapter(): Adapter {
     // ── Users ────────────────────────────────────────────────────────────────
 
     async createUser(user: Omit<AdapterUser, "id">) {
+      console.log("[Adapter] createUser called:", user.email);
       const b_id = crypto.randomUUID();
       await execute(
         `INSERT INTO users (id, name, email, email_verified, image)
@@ -45,11 +46,18 @@ export function OracleAdapter(): Adapter {
     },
 
     async getUser(id) {
-      const rows = await query<any>(
-        `SELECT id, name, email, email_verified, image, xp, level_num, password_hash FROM users WHERE id = :b_id`,
-        { b_id: id }
-      );
-      return rows.length ? mapUser(rows[0]) : null;
+      console.log("[Adapter] getUser called:", id);
+      try {
+        const rows = await query<any>(
+          `SELECT id, name, email, email_verified, image, xp, level_num, password_hash FROM users WHERE id = :b_id`,
+          { b_id: id }
+        );
+        console.log("[Adapter] getUser result rows:", rows.length);
+        return rows.length ? mapUser(rows[0]) : null;
+      } catch (err: any) {
+        console.error("[Adapter] getUser error:", err.message);
+        return null;
+      }
     },
 
     async getUserByEmail(email) {
@@ -61,13 +69,21 @@ export function OracleAdapter(): Adapter {
     },
 
     async getUserByAccount({ provider, providerAccountId }) {
-      const rows = await query<any>(
-        `SELECT u.* FROM users u
-         JOIN accounts a ON a.user_id = u.id
-         WHERE a.provider = :b_prov AND a.provider_account_id = :b_paid`,
-        { b_prov: provider, b_paid: providerAccountId }
-      );
-      return rows.length ? mapUser(rows[0]) : null;
+      console.log("[Adapter] getUserByAccount called:", provider, providerAccountId);
+      try {
+        const rows = await query<any>(
+          `SELECT u.id, u.name, u.email, u.email_verified, u.image, u.xp, u.level_num, u.password_hash
+           FROM users u
+           JOIN accounts a ON a.user_id = u.id
+           WHERE a.provider = :b_prov AND a.provider_account_id = :b_paid`,
+          { b_prov: provider, b_paid: providerAccountId }
+        );
+        console.log("[Adapter] getUserByAccount result rows:", rows.length);
+        return rows.length ? mapUser(rows[0]) : null;
+      } catch (err: any) {
+        console.error("[Adapter] getUserByAccount error:", err.message);
+        return null;
+      }
     },
 
     async updateUser(user) {
@@ -100,6 +116,7 @@ export function OracleAdapter(): Adapter {
     // ── Accounts ─────────────────────────────────────────────────────────────
 
     async linkAccount(account: AdapterAccount) {
+      console.log("[Adapter] linkAccount called:", account.provider, account.providerAccountId);
       const b_id = crypto.randomUUID();
       await execute(
         `INSERT INTO accounts
