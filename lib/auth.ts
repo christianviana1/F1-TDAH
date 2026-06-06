@@ -15,22 +15,28 @@ async function findOrCreateGoogleUser(profile: {
   image?: string;
   googleId: string;
 }): Promise<{ id: string; xp: number; level: number }> {
+  console.log("[findOrCreateGoogleUser] Buscando por email:", profile.email);
   // Busca por email
   const existing = await query<any>(
     `SELECT id, xp, level_num FROM users WHERE email = :b_email`,
     { b_email: profile.email }
   );
+  console.log("[findOrCreateGoogleUser] rows encontradas:", existing.length);
 
   if (existing.length > 0) {
-    return { id: existing[0].ID, xp: existing[0].XP ?? 0, level: existing[0].LEVEL_NUM ?? 1 };
+    const u = existing[0];
+    console.log("[findOrCreateGoogleUser] Usuário existente, id:", u.ID);
+    return { id: u.ID, xp: u.XP ?? 0, level: u.LEVEL_NUM ?? 1 };
   }
 
   // Cria novo usuário
+  console.log("[findOrCreateGoogleUser] Criando novo usuário para:", profile.email);
   const b_id = crypto.randomUUID();
   await execute(
     `INSERT INTO users (id, name, email, image) VALUES (:b_id, :b_name, :b_email, :b_img)`,
     { b_id, b_name: profile.name, b_email: profile.email, b_img: profile.image ?? null }
   );
+  console.log("[findOrCreateGoogleUser] Novo usuário criado, id:", b_id);
 
   return { id: b_id, xp: 0, level: 1 };
 }
@@ -76,21 +82,30 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async signIn({ user, account, profile }) {
+      console.log("[signIn] provider:", account?.provider, "email:", profile?.email ?? user?.email);
       // Para login com Google, busca/cria o usuário no Oracle
-      if (account?.provider === "google" && profile?.email) {
+      if (account?.provider === "google") {
+        const email = profile?.email ?? user?.email;
+        if (!email) {
+          console.error("[signIn] Google login sem email — abortando");
+          return false;
+        }
         try {
+          console.log("[signIn] Chamando findOrCreateGoogleUser para:", email);
           const dbUser = await findOrCreateGoogleUser({
-            email: profile.email,
-            name: (profile as any).name ?? profile.email,
-            image: (profile as any).picture ?? undefined,
-            googleId: (profile as any).sub ?? "",
+            email,
+            name: (profile as any)?.name ?? (user as any)?.name ?? email,
+            image: (profile as any)?.picture ?? user?.image ?? undefined,
+            googleId: (profile as any)?.sub ?? "",
           });
+          console.log("[signIn] dbUser encontrado/criado:", dbUser.id);
           // Injeta o ID do banco no objeto user para o callback jwt
           user.id = dbUser.id;
           (user as any).xp = dbUser.xp;
           (user as any).level = dbUser.level;
-        } catch (err) {
-          console.error("[signIn] Error finding/creating Google user:", err);
+        } catch (err: any) {
+          console.error("[signIn] ERRO ao buscar/criar usuário Google:", err?.message ?? err);
+          console.error("[signIn] Stack:", err?.stack);
           return false;
         }
       }
