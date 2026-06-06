@@ -1,7 +1,6 @@
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import type { NextAuthOptions } from "next-auth";
-import { OracleAdapter } from "./oracle-adapter";
 import { query, execute } from "./oracle";
 import { createHash } from "crypto";
 
@@ -9,21 +8,36 @@ function hashPassword(password: string) {
   return createHash("sha256").update(password).digest("hex");
 }
 
+// Busca ou cria usuário para login com Google
+async function findOrCreateGoogleUser(profile: {
+  email: string;
+  name: string;
+  image?: string;
+  googleId: string;
+}): Promise<{ id: string; xp: number; level: number }> {
+  // Busca por email
+  const existing = await query<any>(
+    `SELECT id, xp, level_num FROM users WHERE email = :b_email`,
+    { b_email: profile.email }
+  );
+
+  if (existing.length > 0) {
+    return { id: existing[0].ID, xp: existing[0].XP ?? 0, level: existing[0].LEVEL_NUM ?? 1 };
+  }
+
+  // Cria novo usuário
+  const b_id = crypto.randomUUID();
+  await execute(
+    `INSERT INTO users (id, name, email, image) VALUES (:b_id, :b_name, :b_email, :b_img)`,
+    { b_id, b_name: profile.name, b_email: profile.email, b_img: profile.image ?? null }
+  );
+
+  return { id: b_id, xp: 0, level: 1 };
+}
+
 export const authOptions: NextAuthOptions = {
-  adapter: OracleAdapter(),
+  // SEM adapter — JWT puro, usuários gerenciados via callbacks
   session: { strategy: "jwt" },
-  debug: true, // força log de todos os erros em produção
-  logger: {
-    error(code, metadata) {
-      console.error("[NextAuth Error]", JSON.stringify({ code, metadata }));
-    },
-    warn(code) {
-      console.warn("[NextAuth Warn]", code);
-    },
-    debug(code, metadata) {
-      console.log("[NextAuth Debug]", JSON.stringify({ code, metadata }));
-    },
-  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -39,8 +53,7 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
 
         const rows = await query<any>(
-          `SELECT id, name, email, xp, level_num, password_hash
-           FROM users WHERE email = :b_email`,
+          `SELECT id, name, email, xp, level_num, password_hash FROM users WHERE email = :b_email`,
           { b_email: credentials.email }
         );
 
@@ -62,14 +75,33 @@ export const authOptions: NextAuthOptions = {
   pages: { signIn: "/login" },
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
+    async signIn({ user, account, profile }) {
+      // Para login com Google, busca/cria o usuário no Oracle
+      if (account?.provider === "google" && profile?.email) {
+        try {
+          const dbUser = await findOrCreateGoogleUser({
+            email: profile.email,
+            name: (profile as any).name ?? profile.email,
+            image: (profile as any).picture ?? undefined,
+            googleId: (profile as any).sub ?? "",
+          });
+          // Injeta o ID do banco no objeto user para o callback jwt
+          user.id = dbUser.id;
+          (user as any).xp = dbUser.xp;
+          (user as any).level = dbUser.level;
+        } catch (err) {
+          console.error("[signIn] Error finding/creating Google user:", err);
+          return false;
+        }
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.xp = (user as any).xp ?? 0;
         token.level = (user as any).level ?? 1;
       } else if (token.id) {
-        // Atualiza XP e nível do token a cada verificação de sessão.
-        // O try/catch garante que um timeout ou erro Oracle não quebre a sessão.
         try {
           const rows = await query<any>(
             `SELECT xp, level_num FROM users WHERE id = :b_uid`,
@@ -80,7 +112,7 @@ export const authOptions: NextAuthOptions = {
             token.level = rows[0].LEVEL_NUM;
           }
         } catch {
-          // Mantém os valores anteriores do token se o banco não responder
+          // Mantém valores anteriores
         }
       }
       return token;
