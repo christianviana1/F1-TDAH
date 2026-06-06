@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
-    secureCookie: process.env.NODE_ENV === "production",
+    // HTTP deployment — cookie nunca tem flag Secure
+    secureCookie: false,
+    cookieName: "next-auth.session-token",
   });
 
   const { pathname } = request.nextUrl;
@@ -16,7 +18,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // Se não está autenticado e tenta acessar /dashboard, manda pro login
+  // Se não está autenticado e tenta acessar rotas protegidas, manda pro login
   if (!token && pathname.startsWith("/dashboard")) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
