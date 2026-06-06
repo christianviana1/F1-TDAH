@@ -44,13 +44,20 @@ async function findOrCreateGoogleUser(profile: {
 export const authOptions: NextAuthOptions = {
   // SEM adapter — JWT puro, usuários gerenciados via callbacks
   session: { strategy: "jwt" },
-  // Necessário quando rodando atrás de proxy/load balancer (Coolify)
-  // Permite que o NextAuth aceite requisições de qualquer host
-  useSecureCookies: false,
+  // useSecureCookies segue o protocolo da NEXTAUTH_URL
+  // Em HTTP: false. Em HTTPS: true (padrão). Deixa o NextAuth decidir pelo NEXTAUTH_URL.
+  useSecureCookies: process.env.NEXTAUTH_URL?.startsWith("https") ?? false,
   cookies: {
     sessionToken: {
-      name: "next-auth.session-token",
-      options: { httpOnly: true, sameSite: "lax", path: "/", secure: false },
+      name: process.env.NEXTAUTH_URL?.startsWith("https")
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NEXTAUTH_URL?.startsWith("https") ?? false,
+      },
     },
     callbackUrl: {
       name: "next-auth.callback-url",
