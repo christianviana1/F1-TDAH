@@ -51,8 +51,9 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 
-# Pasta para a Oracle Wallet
-RUN mkdir -p /app/wallet && chown -R nextjs:nodejs /app/wallet /app/docker-entrypoint.sh
+# Pasta para a Oracle Wallet e cache do Next.js
+RUN mkdir -p /app/wallet /app/.next/cache && \
+    chown -R nextjs:nodejs /app/wallet /app/.next /app/docker-entrypoint.sh
 
 USER nextjs
 
