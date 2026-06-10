@@ -2,14 +2,19 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-export async function proxy(request: NextRequest) {
-  const isHttps = process.env.NEXTAUTH_URL?.startsWith("https") ?? false;
+function isSecure(request: NextRequest): boolean {
+  const proto = request.headers.get("x-forwarded-proto");
+  if (proto) return proto === "https";
+  return process.env.NEXTAUTH_URL?.startsWith("https") ?? false;
+}
 
+export async function proxy(request: NextRequest) {
+  const secure = isSecure(request);
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
-    secureCookie: isHttps,
-    cookieName: isHttps
+    secureCookie: secure,
+    cookieName: secure
       ? "__Secure-next-auth.session-token"
       : "next-auth.session-token",
   });
