@@ -63,7 +63,13 @@ export async function PATCH(
 
   const { id } = await props.params;
 
-  const rows = await query<any>(`SELECT * FROM tasks WHERE id = :b_id`, { b_id: id });
+  const rows = await query<any>(
+    `SELECT id, user_id, title, difficulty, status,
+            scheduled_date, start_time, end_time, estimated_duration,
+            rest_time, recurrence_series_id
+     FROM tasks WHERE id = :b_id`,
+    { b_id: id }
+  );
   if (!rows.length || rows[0].USER_ID !== token.id) {
     return NextResponse.json({ error: "Tarefa não encontrada" }, { status: 404 });
   }

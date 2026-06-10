@@ -1,7 +1,7 @@
 // F1 Task Manager — Service Worker
 // Cache de assets + offline support para /mobile
 
-const CACHE_VERSION = "f1-v1";
+const CACHE_VERSION = "f1-v2";
 const TASKS_CACHE = "f1-tasks-today";
 const PENDING_CACHE = "f1-pending-ops";
 const SYNC_TAG = "sync-complete-tasks";
@@ -40,15 +40,17 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // PATCH /api/tasks/:id — intercepta para offline
+  // PATCH /api/tasks/:id — só intercepta quando OFFLINE
   if (request.method === "PATCH" && /^\/api\/tasks\/[^/]+$/.test(url.pathname)) {
+    // Se online, deixa passar normalmente para o servidor
+    if (navigator.onLine) return;
     event.respondWith(handleTaskComplete(request, url));
     return;
   }
 
-  // GET /api/tasks/today — stale-while-revalidate
+  // GET /api/tasks/today — network-first (não usa cache stale para evitar dados desatualizados)
   if (request.method === "GET" && url.pathname === "/api/tasks/today") {
-    event.respondWith(staleWhileRevalidate(request, TASKS_CACHE));
+    event.respondWith(networkFirstWithCache(request, TASKS_CACHE));
     return;
   }
 
