@@ -44,37 +44,8 @@ async function findOrCreateGoogleUser(profile: {
 export const authOptions: NextAuthOptions = {
   // SEM adapter — JWT puro, usuários gerenciados via callbacks
   session: { strategy: "jwt" },
-  // HTTPS detectado pelo NEXTAUTH_URL — determina nome e flag do cookie de sessão
-  useSecureCookies: process.env.NEXTAUTH_URL?.startsWith("https") ?? false,
-  cookies: {
-    sessionToken: {
-      name: (process.env.NEXTAUTH_URL?.startsWith("https") ?? false)
-        ? "__Secure-next-auth.session-token"
-        : "next-auth.session-token",
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NEXTAUTH_URL?.startsWith("https") ?? false,
-      },
-    },
-    callbackUrl: {
-      name: "next-auth.callback-url",
-      options: { httpOnly: true, sameSite: "lax", path: "/", secure: false },
-    },
-    csrfToken: {
-      name: "next-auth.csrf-token",
-      options: { httpOnly: true, sameSite: "lax", path: "/", secure: false },
-    },
-    pkceCodeVerifier: {
-      name: "next-auth.pkce.code_verifier",
-      options: { httpOnly: true, sameSite: "lax", path: "/", secure: false, maxAge: 900 },
-    },
-    state: {
-      name: "next-auth.state",
-      options: { httpOnly: true, sameSite: "lax", path: "/", secure: false, maxAge: 900 },
-    },
-  },
+  // NextAuth detecta HTTPS automaticamente pelo NEXTAUTH_URL
+  // e usa __Secure- prefix nos cookies quando em produção HTTPS
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
