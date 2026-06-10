@@ -1,10 +1,9 @@
 import { getToken as nextAuthGetToken } from "next-auth/jwt";
 import type { NextRequest } from "next/server";
 
-const isHttps = process.env.NEXTAUTH_URL?.startsWith("https") ?? false;
-
-// Wrapper que detecta HTTP vs HTTPS pelo NEXTAUTH_URL
+// Wrapper que detecta HTTP vs HTTPS pelo NEXTAUTH_URL em runtime
 export async function getAuthToken(request: NextRequest) {
+  const isHttps = process.env.NEXTAUTH_URL?.startsWith("https") ?? false;
   return nextAuthGetToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,

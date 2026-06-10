@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-const isHttps = process.env.NEXTAUTH_URL?.startsWith("https") ?? false;
-
 export async function proxy(request: NextRequest) {
+  const isHttps = process.env.NEXTAUTH_URL?.startsWith("https") ?? false;
+
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
