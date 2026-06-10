@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
   }));
 
   // Cache-Control para o service worker poder usar stale-while-revalidate
-  return NextResponse.json(tasks, {
+  return NextResponse.json({ debug_today: todayStr, debug_count: tasks.length, tasks }, {
     headers: {
       "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
       "X-Today-Used": todayStr,
