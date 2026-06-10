@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   let rows: any[];
 
   try {
-    // Tasks agendadas para hoje OU criadas hoje (quando não há scheduled_date)
+    // Tasks do dia: agendadas para hoje, atrasadas (scheduled_date < hoje), ou sem data agendada (todas pendentes)
     rows = await query<any>(
       `SELECT id, user_id, title, difficulty, status, created_at,
               scheduled_date, start_time, end_time, estimated_duration, rest_time,
@@ -24,24 +24,27 @@ export async function GET(request: NextRequest) {
        FROM tasks
        WHERE user_id = :b_uid
          AND status != 'SKIPPED'
+         AND status != 'COMPLETED'
          AND (
-           scheduled_date = TO_DATE(:b_today, 'YYYY-MM-DD')
-           OR (scheduled_date IS NULL AND TRUNC(created_at) = TO_DATE(:b_today2, 'YYYY-MM-DD'))
+           scheduled_date <= TO_DATE(:b_today, 'YYYY-MM-DD')
+           OR scheduled_date IS NULL
          )
-       ORDER BY start_time NULLS LAST, created_at ASC`,
-      { b_uid: token.id, b_today: todayStr, b_today2: todayStr }
+       ORDER BY scheduled_date NULLS LAST, start_time NULLS LAST, created_at ASC
+       FETCH FIRST 50 ROWS ONLY`,
+      { b_uid: token.id, b_today: todayStr }
     );
   } catch (err: any) {
-    // Fallback sem colunas avançadas
+    // Fallback sem colunas avançadas (scheduled_date não existe)
     if (err?.errorNum === 904) {
       rows = await query<any>(
         `SELECT id, user_id, title, difficulty, status, created_at
          FROM tasks
          WHERE user_id = :b_uid
            AND status != 'SKIPPED'
-           AND TRUNC(created_at) = TO_DATE(:b_today, 'YYYY-MM-DD')
-         ORDER BY created_at ASC`,
-        { b_uid: token.id, b_today: todayStr }
+           AND status != 'COMPLETED'
+         ORDER BY created_at ASC
+         FETCH FIRST 50 ROWS ONLY`,
+        { b_uid: token.id }
       );
     } else {
       throw err;
