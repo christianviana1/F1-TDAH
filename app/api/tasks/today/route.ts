@@ -7,11 +7,8 @@ export async function GET(request: NextRequest) {
   const token = await getAuthToken(request);
   if (!token?.id) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
-  const dd = String(today.getDate()).padStart(2, "0");
-  const todayStr = `${yyyy}-${mm}-${dd}`;
+  // Usa o fuso horário de Brasília para calcular "hoje"
+  const todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
 
   let rows: any[];
 
@@ -64,6 +61,9 @@ export async function GET(request: NextRequest) {
 
   // Cache-Control para o service worker poder usar stale-while-revalidate
   return NextResponse.json(tasks, {
-    headers: { "Cache-Control": "public, max-age=300, stale-while-revalidate=600" },
+    headers: {
+      "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+      "X-Today-Used": todayStr,
+    },
   });
 }
